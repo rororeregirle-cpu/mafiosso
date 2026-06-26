@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>واجهة التحقيق السرية | ملف 147</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ==========================================================================
+           1. VARIABLES & RESET
+           ========================================================================== */
+        :root {
+            --bg-dark: #050507;
+            --primary-gold: #C9A227;
+            --primary-glow: rgba(201, 162, 39, 0.4);
+            --accent-red: #ff3333;
+            --accent-green: #00ff66;
+            --glass-bg: rgba(15, 15, 20, 0.7);
+            --glass-border: rgba(201, 162, 39, 0.2);
+            --text-main: #e0e0e3;
+            --text-muted: #8a8a93;
+            --font-cairo: 'Cairo', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: var(--font-cairo);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+        }
+
+        /* ==========================================================================
+           2. AMBIENT ATMOSPHERE (Background, Scanlines, Particles)
+           ========================================================================== */
+        #particle-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: var(--primary-gold);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: floatUp 8s infinite linear;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(105vh) translateX(0);
+                opacity: 0;
+            }
+            10% { opacity: 0.4; }
+            90% { opacity: 0.4; }
+            100% {
+                transform: translateY(-5vh) translateX(50px);
+                opacity: 0;
+            }
+        }
+
+        /* CRT Scanline and Flicker Effects */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 9999;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 15, 0.1);
+            opacity: 0;
+            z-index: 9998;
+            pointer-events: none;
+            animation: crtFlicker 0.15s infinite;
+        }
+
+        @keyframes crtFlicker {
+            0% { opacity: 0.11; }
+            50% { opacity: 0.13; }
+            100% { opacity: 0.11; }
+        }
+
+        .vignette {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            box-shadow: inset 0 0 150px rgba(0,0,0,0.9);
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* ==========================================================================
+           3. UNIVERSAL COMPONENT STYLES (Glassmorphism, Buttons, Input)
+           ========================================================================== */
+        .screen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease-in-out, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: scale(0.95);
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: scale(1);
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 650px;
+            width: 100%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(201, 162, 39, 0.05);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary-gold), transparent);
+            animation: scanlineWidth 4s infinite linear;
+        }
+
+        .btn-glow {
+            background: transparent;
+            border: 1px solid var(--primary-gold);
+            color: var(--primary-gold);
+            font-family: var(--font-cairo);
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding: 12px 45px;
+            margin-top: 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px var(--primary-glow);
+            letter-spacing: 1px;
+        }
+
+        .btn-glow:hover {
+            background: var(--primary-gold);
+            color: var(--bg-dark);
+            box-shadow: 0 0 30px var(--primary-gold);
+            transform: translateY(-2px);
+        }
+
+        .btn-glow:active {
+            transform: translateY(1px);
+        }
+
+        .input-premium {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            font-family: var(--font-cairo);
+            font-size: 1.1rem;
+            padding: 15px 20px;
+            border-radius: 6px;
+            width: 100%;
+            max-width: 350px;
+            outline: none;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin: 20px auto;
+            display: block;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+        }
+
+        .input-premium:focus {
+            border-color: var(--primary-gold);
+            box-shadow: 0 0 15px var(--primary-glow), inset 0 0 5px rgba(0,0,0,0.8);
+        }
+
+        /* ==========================================================================
+           4. SCREEN 1: ACCESS DENIED / GRANTED & TERMINAL
+           ========================================================================== */
+        #screen1 {
+            background-color: #020203;
+        }
+
+        .security-status {
+            font-size: 3.5rem;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .denied {
+            color: var(--accent-red);
+            text-shadow: 0 0 20px rgba(255, 51, 51, 0.6);
+            animation: glitch 0.4s infinite;
+        }
+
+        .granted {
+            color: var(--accent-green);
+            text-shadow: 0 0 20px rgba(0, 255, 102, 0.6);
+        }
+
+        .terminal-container {
+            width: 100%;
+            max-width: 550px;
+            height: auto;
+            min-height: 180px;
+            background: rgba(5, 5, 8, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            padding: 20px;
+            text-align: right;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.9);
+            display: none;
+        }
+
+        .terminal-line {
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            border-left: 2px solid transparent;
+        }
+
+        .terminal-line.active-command {
+            color: var(--primary-gold);
+        }
+
+        .progress-wrapper {
+            margin-top: 15px;
+            width: 100%;
+            display: none;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary-gold), #fff);
+            box-shadow: 0 0 10px var(--primary-gold);
+            transition: width 0.4s ease;
+        }
+
+        .progress-text {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--primary-gold);
+            margin-top: 5px;
+            display: inline-block;
+        }
+
+        /* ==========================================================================
+           5. SCREEN 2: INITIAL DOSSIER / BRIEFING
+           ========================================================================== */
+        .case-title {
+            color: var(--primary-gold);
+            font-size: 2.2rem;
+            font-weight: 900;
+            margin-bottom: 25px;
+            text-shadow: 0 0 15px var(--primary-glow);
+        }
+
+        .briefing-text p {
+            font-size: 1.15rem;
+            line-height: 2;
+            color: var(--text-main);
+            margin-bottom: 12px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.6s ease forwards;
+        }
+
+        .active .briefing-text p:nth-child(1) { transition-delay: 0.2s; opacity: 1; transform: translateY(0); }
+        .active .briefing-text p:nth-child(2) { transition-delay: 0.8s; opacity: 1; transform: translateY(0); }
+        .active .briefing-text p:nth-child(3) { transition-delay: 1.4s; opacity: 1; transform: translateY(0); }
+        .active .briefing-text p:nth-child(4) { transition-delay: 2.0s; opacity: 1; transform: translateY(0); }
+
+        /* ==========================================================================
+           6. SCREEN 3: CRYPTIC PUZZLE INTERFACE
+           ========================================================================== */
+        .puzzle-title {
+            color: var(--primary-gold);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .puzzle-subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+        }
+
+        .intercept-card {
+            background: rgba(0, 0, 0, 0.4);
+            border-right: 3px solid var(--primary-gold);
+            padding: 15px 20px;
+            text-align: right;
+            margin-bottom: 30px;
+            min-height: 110px;
+        }
+
+        .intercept-card p {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: #d1d1d6;
+        }
+
+        .cipher-display {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #fff;
+            margin: 25px 0;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .cipher-hint {
+            color: var(--primary-gold);
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 0 8px rgba(201, 162, 39, 0.2);
+            letter-spacing: 1px;
+        }
+
+        .feedback-message {
+            font-size: 1.1rem;
+            margin-top: 15px;
+            min-height: 30px;
+            font-weight: 700;
+        }
+
+        .error-msg {
+            color: var(--accent-red);
+            animation: blink 0.5s ease;
+        }
+
+        .success-msg {
+            color: var(--accent-green);
+            text-shadow: 0 0 10px rgba(0, 255, 102, 0.4);
+        }
+
+        .decrypted-reveal {
+            display: none;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px dashed rgba(201, 162, 39, 0.3);
+            animation: fadeIn 0.8s ease forwards;
+        }
+
+        .location-badge {
+            display: inline-block;
+            background: rgba(201, 162, 39, 0.1);
+            border: 1px solid var(--primary-gold);
+            color: var(--primary-gold);
+            padding: 8px 25px;
+            font-size: 1.4rem;
+            font-weight: 900;
+            border-radius: 4px;
+            margin: 15px 0;
+            text-shadow: 0 0 10px var(--primary-glow);
+            box-shadow: 0 0 15px rgba(201, 162, 39, 0.15);
+        }
+
+        /* ==========================================================================
+           7. CUSTOM ANIMATIONS & UTILITIES
+           ========================================================================== */
+        @keyframes glitch {
+            0% { transform: translate(0); text-shadow: -2px 2px var(--accent-red), 2px -2px #00fff0; }
+            20% { transform: translate(-2px, 2px); text-shadow: 2px -2px var(--accent-red), -2px 2px #00fff0; }
+            40% { transform: translate(1px, -1px); text-shadow: -1px 1px var(--accent-red), 2px 2px #00fff0; }
+            60% { transform: translate(-1px, 1px); text-shadow: 2px 1px var(--accent-red), -1px -2px #00fff0; }
+            80% { transform: translate(2px, -2px); text-shadow: -2px -1px var(--accent-red), 1px 2px #00fff0; }
+            100% { transform: translate(0); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        .shake-input {
+            animation: shake 0.4s ease;
+            border-color: var(--accent-red) !important;
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.4) !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .cursor-blink::after {
+            content: '|';
+            animation: blink 0.8s infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="vignette"></div>
+    <div id="particle-container"></div>
+
+    <section id="screen1" class="screen active">
+        <div id="security-banner" class="security-status denied">ACCESS DENIED</div>
+        
+        <div class="terminal-container" id="terminal"></div>
+
+        <div class="progress-wrapper" id="progressWrapper">
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <span class="progress-text" id="progressText">0%</span>
+        </div>
+    </section>
+
+    <section id="screen2" class="screen">
+        <div class="glass-card">
+            <h1 class="case-title">🔒 القضية رقم 147</h1>
+            <div class="briefing-text">
+                <p>تهانينا أيها المحققون...</p>
+                <p>لقد تمكنتم من كشف هوية المجرمين.</p>
+                <p>لكن القضية... لم تُغلق بعد.</p>
+                <p>اللوحة الأصلية... لم تغادر المزرعة.</p>
+                <p>إذا أردتم الفوز... فعليكم الوصول إليها قبل باقي الفرق.</p>
+            </div>
+            <button class="btn-glow" id="startInvestigationBtn">ابدأ التحقيق</button>
+        </div>
+    </section>
+
+    <section id="screen3" class="screen">
+        <div class="glass-card">
+            <h2 class="puzzle-title">اللغز الأول</h2>
+            <div class="puzzle-subtitle">تم استرجاع آخر رسالة بين أندريا وتوماس...</div>
+            
+            <div class="intercept-card">
+                <p id="interceptMessage" class="cursor-blink"></p>
+            </div>
+
+            <div id="puzzleCipherArea" style="display:none; animation: fadeIn 0.6s ease forwards;">
+                <div class="cipher-display">
+                    <span>ME</span>
+                    <span>+</span>
+                    <span>🥩</span>
+                </div>
+                <p class="cipher-hint">💡 ترجمها</p>
+                
+                <input type="text" id="solutionInput" class="input-premium" placeholder="اكتب الإجابة..." autocomplete="off">
+                <button class="btn-glow" id="verifyBtn" style="margin-top: 10px; padding: 10px 35px;">تحقق</button>
+                <div class="feedback-message" id="feedbackMsg"></div>
+            </div>
+
+            <div class="decrypted-reveal" id="decryptedSection">
+                <div style="font-size: 2rem; font-weight: 900; color: var(--accent-green); margin-bottom: 10px;">ACCESS GRANTED</div>
+                <div style="color: var(--text-muted); margin-bottom: 15px;">✓ الكلمة الأولى: <strong style="color: #fff;">قابلني</strong></div>
+                
+                <div style="font-size: 1.2rem; font-weight: 700; color: #fff; margin-top: 20px;">تم العثور على موقع الملف التالي</div>
+                <div class="location-badge" id="decryptedLocation">📍 الكانتين</div>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">يبدو أن أندريا أخفى الرسالة التالية هناك...</p>
+                
+                <button class="btn-glow" id="finishStageBtn" style="border-color: var(--accent-green); color: var(--accent-green); box-shadow: 0 0 15px rgba(0,255,102,0.2);">إنهاء المرحلة الأولى</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const SoundEngine = {
+            play(type) {
+                switch(type) {
+                    case 'glitch': console.log('🔊 SFX: Glitch active.'); break;
+                    case 'granted': console.log('🔊 SFX: Security Override Success.'); break;
+                    case 'typing': console.log('🔊 SFX: Terminal Keystroke Tick.'); break;
+                    case 'click': console.log('🔊 SFX: Menu Select.'); break;
+                    case 'error': console.log('🔊 SFX: Access Restricted.'); break;
+                    case 'success': console.log('🔊 SFX: Code Decrypted.'); break;
+                }
+            }
+        };
+
+        function initAtmosphere() {
+            const container = document.getElementById('particle-container');
+            const count = 30;
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const size = Math.random() * 3 + 1;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${Math.random() * 100}vw`;
+                particle.style.animationDelay = `${Math.random() * 8}s`;
+                particle.style.animationDuration = `${Math.random() * 5 + 6}s`;
+                container.appendChild(particle);
+            }
+        }
+
+        function changeActiveScreen(targetId) {
+            SoundEngine.play('click');
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            setTimeout(() => {
+                document.getElementById(targetId).classList.add('active');
+            }, 100);
+        }
+
+        function runBootupSequence() {
+            const banner = document.getElementById('security-banner');
+            const terminal = document.getElementById('terminal');
+            const progressWrapper = document.getElementById('progressWrapper');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            SoundEngine.play('glitch');
+
+            setTimeout(() => {
+                banner.classList.remove('denied');
+                banner.classList.add('granted');
+                banner.innerText = 'ACCESS GRANTED';
+                SoundEngine.play('granted');
+                
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                    terminal.style.display = 'block';
+                    executeTerminalLogs();
+                }, 1200);
+            }, 2000);
+
+            const terminalLogs = [
+                { text: 'جارٍ استعادة ملفات القضية...', delay: 400 },
+                { text: 'Initializing...', delay: 800 },
+                { text: 'Recovering Deleted Files...', delay: 1300 },
+                { text: 'Decrypting Files...', delay: 1800 }
+            ];
+
+            function executeTerminalLogs() {
+                terminalLogs.forEach((log) => {
+                    setTimeout(() => {
+                        const line = document.createElement('div');
+                        line.classList.add('terminal-line', 'active-command');
+                        line.innerText = '> ';
+                        terminal.appendChild(line);
+                        
+                        let charIndex = 0;
+                        SoundEngine.play('typing');
+                        
+                        function printCharacter() {
+                            if (charIndex < log.text.length) {
+                                line.innerText += log.text.charAt(charIndex);
+                                charIndex++;
+                                setTimeout(printCharacter, 30);
+                            } else {
+                                line.classList.remove('active-command');
+                            }
+                        }
+                        printCharacter();
+                    }, log.delay);
+                });
+
+                setTimeout(() => {
+                    progressWrapper.style.display = 'block';
+                    const milestones = [0, 20, 43, 61, 84, 100];
+                    let currentStep = 0;
+
+                    function advanceProgress() {
+                        if (currentStep < milestones.length) {
+                            let value = milestones[currentStep];
+                            progressBar.style.width = `${value}%`;
+                            progressText.innerText = `${value}%`;
+                            SoundEngine.play('typing');
+                            currentStep++;
+                            setTimeout(advanceProgress, 450);
+                        } else {
+                            setTimeout(() => { changeActiveScreen('screen2'); }, 600);
+                        }
+                    }
+                    advanceProgress();
+                }, 2400);
+            }
+        }
+
+        function triggerScreenThreePuzzle() {
+            const rawMessage = "توماس...\nإذا حدث أي شيء...\nلن أرسل لك مكان اللقاء.\nلكن سأتركه في صورة لغز.";
+            const targetParagraph = document.getElementById('interceptMessage');
+            const puzzleClueArea = document.getElementById('puzzleCipherArea');
+            
+            let cursor = 0;
+            SoundEngine.play('typing');
+
+            function streamingTypewriter() {
+                if (cursor < rawMessage.length) {
+                    const char = rawMessage.charAt(cursor);
+                    targetParagraph.innerHTML += char === '\n' ? '<br>' : char;
+                    cursor++;
+                    setTimeout(streamingTypewriter, 45);
+                } else {
+                    targetParagraph.classList.remove('cursor-blink');
+                    puzzleClueArea.style.display = 'block';
+                }
+            }
+            streamingTypewriter();
+        }
+
+        function validateDecryptionEngine() {
+            const userInput = document.getElementById('solutionInput').value.trim();
+            const feedbackBox = document.getElementById('feedbackMsg');
+            const inputField = document.getElementById('solutionInput');
+
+            const normalizeString = (input) => {
+                return input
+                    .replace(/\s+/g, '') 
+                    .replace(/[أإآا]/g, 'ا') 
+                    .replace(/[ىي]/g, 'ي'); 
+            };
+
+            const cleanInput = normalizeString(userInput);
+            const validPermutations = ["قابلني", "قابل ني", "قابلنى"].map(normalizeString);
+
+            if (validPermutations.includes(cleanInput)) {
+                SoundEngine.play('success');
+                feedbackBox.innerHTML = "";
+                document.getElementById('puzzleCipherArea').style.display = 'none';
+                
+                document.getElementById('decryptedSection').style.display = 'block';
+                
+                const locationBadge = document.getElementById('decryptedLocation');
+                const locText = locationBadge.innerText;
+                locationBadge.innerText = "";
+                let idx = 0;
+                
+                function decryptSimulate() {
+                    if (idx < locText.length) {
+                        locationBadge.innerText += locText.charAt(idx);
+                        idx++;
+                        setTimeout(decryptSimulate, 80);
+                    }
+                }
+                decryptSimulate();
+            } else {
+                SoundEngine.play('error');
+                inputField.classList.add('shake-input');
+                feedbackBox.className = "feedback-message error-msg";
+                feedbackBox.innerText = "❌ الإجابة غير صحيحة. حاول مجدداً.";
+                
+                setTimeout(() => { inputField.classList.remove('shake-input'); }, 400);
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initAtmosphere();
+            runBootupSequence();
+
+            document.getElementById('startInvestigationBtn').addEventListener('click', () => {
+                changeActiveScreen('screen3');
+                triggerScreenThreePuzzle();
+            });
+
+            document.getElementById('verifyBtn').addEventListener('click', validateDecryptionEngine);
+            document.getElementById('solutionInput').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') validateDecryptionEngine();
+            });
+
+            document.getElementById('finishStageBtn').addEventListener('click', () => {
+                SoundEngine.play('click');
+                window.location.href = 'puzzle2.html';
+            });
+        });
+    </script>
+</body>
+</html>
